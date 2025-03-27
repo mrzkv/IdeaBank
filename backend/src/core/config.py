@@ -50,9 +50,7 @@ settings = Settings(
         JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=30),
         JWT_REFRESH_TOKEN_EXPIRES=timedelta(days=15),
         JWT_CSRF_IN_COOKIES=False,
-        JWT_ALGORITHM='RS256',
-        JWT_PUBLIC_KEY=os.getenv('JWT_PUBLIC_KEY'),
-        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY')
+        JWT_SECRET_KEY=os.getenv('SECRET_KEY'),
     )
 
 )

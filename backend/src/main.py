@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.src.core.config import settings
 from backend.src.core.db_helper import db_helper
 
+from backend.src.auth.routers import router as auth_router
+
+
 import time
 from loguru import logger
 from contextlib import asynccontextmanager
@@ -41,6 +44,8 @@ main_app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+main_app.include_router(auth_router)
 
 @main_app.get('/ping')
 async def ping():

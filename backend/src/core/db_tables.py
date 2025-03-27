@@ -4,13 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class UsersFio(Base):
-    __tablename__ = 'users_fio'
-
-    user_id = Column(BigInteger, primary_key=True, unique=True)
-    name = Column(String)
-    surname = Column(String)
-    patronymic = Column(String)
 
 
 class Ideas(Base):
@@ -37,3 +30,11 @@ class Users(Base):
     role = Column(String)
     join_date = Column(TIMESTAMP)
     status = Column(String)
+
+class UsersFio(Base):
+    __tablename__ = 'users_fio'
+
+    user_id = Column(BigInteger, primary_key=True, unique=True)
+    name = Column(String)
+    surname = Column(String)
+    patronymic = Column(String)

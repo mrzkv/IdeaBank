@@ -7,6 +7,7 @@ from backend.src.core.config import settings
 from backend.src.core.db_helper import db_helper
 
 from backend.src.auth.routers import router as auth_router
+from backend.src.idea.router import router as idea_router
 
 
 import time
@@ -46,6 +47,7 @@ main_app.add_middleware(
 )
 
 main_app.include_router(auth_router)
+main_app.include_router(idea_router)
 
 @main_app.get('/ping')
 async def ping():

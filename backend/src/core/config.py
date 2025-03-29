@@ -14,6 +14,7 @@ class DataBaseSettings(BaseSettings):
 
 class RoutersPrefix(BaseSettings):
     auth: str
+    idea: str
 
 class Settings(BaseSettings):
     SERVER_START_TIME: int
@@ -44,7 +45,8 @@ settings = Settings(
         max_overflow=int(os.getenv('DB_MAX_OVERFLOW'))
     ),
     routers=RoutersPrefix(
-        auth='/v1/api/auth'
+        auth='/v1/api/auth',
+        idea='/v1/api/idea',
     ),
     jwt=AuthXConfig(
         JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=30),

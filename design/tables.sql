@@ -11,12 +11,12 @@ CREATE TABLE IF NOT EXISTS "ideas" (
 	"name" varchar(255) NOT NULL,
 	"description" varchar(255) NOT NULL,
 	"status" varchar(255) NOT NULL,
-	"start_date" timestamp with time zone NOT NULL,
-	"end_date" timestamp with time zone NOT NULL,
+	"start_date" timestamp NOT NULL,
+	"end_date" timestamp,
 	"creator_id" bigint NOT NULL,
-	"expert_id" bigint NOT NULL,
-	"solution" varchar(255) NOT NULL,
-	"solution_description" varchar(255) NOT NULL,
+	"expert_id" bigint,
+	"solution" varchar(255),
+	"solution_description" varchar(255),
 	PRIMARY KEY ("id")
 );
 

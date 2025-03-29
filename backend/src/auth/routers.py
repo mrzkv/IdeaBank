@@ -72,7 +72,7 @@ async def create_users(
             continue
         uid = await create_user(session=session,
                                 creds=LoginScheme(login=user.login,password=user.password),
-                                role="user")
+                                role=creds.role)
         await insert_user_fio(session=session,fio=fio,uid=uid,)
         users_success.append(
             {

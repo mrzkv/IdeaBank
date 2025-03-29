@@ -1,13 +1,14 @@
 from datetime import datetime
 from typing import List
 
-from sqlalchemy import select, text, insert
+from pyasn1.codec.ber.eoo import endOfOctets
+from sqlalchemy import select, text, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from backend.src.core.db_tables import Ideas
 
-from backend.src.idea.models import IdeaInputScheme, IdeaGetScheme
+from backend.src.idea.models import IdeaInputScheme, IdeaGetScheme, IdeaCompleteScheme
 from backend.src.idea.utils import convert_to_readable_ekb_time
 
 
@@ -15,19 +16,23 @@ async def insert_new_idea(
         session: AsyncSession,
         creds: IdeaInputScheme,
         creator_uid: int,
-        start_time: datetime
+        start_date: datetime
 ) -> int:
+    query = text("""
+    INSERT INTO ideas (name, description, creator_id, status, start_date)
+    VALUES( :name, :description, :creator_id, 'active', :start_date)
+    RETURNING id;
+    """)
     result = await session.execute(
-        insert(Ideas)
-        .values(
-            name=creds.name,
-            description=creds.description,
-            creator_id=creator_uid,
-            status='active',
-            start_date=start_time)
-        .returning(Ideas.id)
+        query, {
+            'name': creds.name,
+            'description': creds.description,
+            'creator_id': creator_uid,
+            'start_date': start_date
+        }
     )
     await session.commit()
+    await session.close()
     return result.scalar()
 
 
@@ -41,9 +46,10 @@ async def get_idea(
     idea = result.scalar()
     if not idea:
         return None
-    idea.start_date = await convert_to_readable_ekb_time(idea.start_date)
+    end_date = None
     if idea.end_date:
-        idea.end_date = await convert_to_readable_ekb_time(idea.end_date)
+        end_date = await convert_to_readable_ekb_time(idea.end_date)
+    start_date = await convert_to_readable_ekb_time(idea.start_date)
 
     return IdeaGetScheme(
         id=id,
@@ -51,8 +57,8 @@ async def get_idea(
         description=idea.description,
         creator_id=idea.creator_id,
         status=idea.status,
-        start_date=idea.start_date,
-        end_date=idea.end_date,
+        start_date=start_date,
+        end_date=end_date,
         expert_id=idea.expert_id,
         solution=idea.solution,
         solution_description=idea.solution_description
@@ -88,3 +94,28 @@ async def get_unsolved_ideas(
         idea = await get_idea(id=id,session=session)
         if idea: ideas_data.append(idea)
     return ideas_data
+
+async def assign_expert_to_idea(
+        idea_id: int,
+        session: AsyncSession,
+        expert_id: int
+) -> None:
+    await session.execute(
+        update(Ideas)
+        .where(Ideas.id == idea_id)
+        .values(expert_id=expert_id, status='in work'))
+    await session.commit()
+
+async def close_idea(
+        session: AsyncSession,
+        idea_id: int,
+        creds: IdeaCompleteScheme,
+        end_date: datetime
+) -> None:
+    await session.execute(
+        update(Ideas)
+        .where(Ideas.id == idea_id)
+        .values(solution=creds.solution,
+                solution_description=creds.solution_description,
+                status='closed'))
+    await session.commit()

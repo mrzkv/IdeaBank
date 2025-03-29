@@ -15,3 +15,7 @@ class IdeaGetScheme(BaseModel):
     expert_id: int | None
     solution: str | None
     solution_description: str | None
+
+class IdeaCompleteScheme(BaseModel):
+    solution: str
+    solution_description: str

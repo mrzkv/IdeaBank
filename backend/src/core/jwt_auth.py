@@ -37,3 +37,10 @@ async def get_payload_by_access_token(
     return token_payload
 
 
+async def get_payload_by_refresh_token(
+        refresh_token: str = Cookie('refresh_token')
+) -> TokenPayload | HTTPException:
+    token_payload = await JWTAuth.decode_token(refresh_token)
+    if not token_payload or token_payload is False or token_payload.type != 'refresh':
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid refresh token')
+    return token_payload

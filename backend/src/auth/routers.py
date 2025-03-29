@@ -10,7 +10,8 @@ from backend.src.auth.utils import *
 
 from backend.src.core.config import settings
 from backend.src.core.db_helper import db_helper
-from backend.src.core.jwt_auth import JWTAuth, get_payload_by_access_token
+from backend.src.core.jwt_auth import (JWTAuth, get_payload_by_access_token,
+                                       get_payload_by_refresh_token)
 
 
 router = APIRouter(
@@ -87,6 +88,22 @@ async def create_users(
         "errors": users_exceptions
     }
 
+@router.get("/refresh")
+async def refresh_access_token(
+        response: Response,
+        token_payload: TokenPayload = Depends(get_payload_by_refresh_token),
+        session: AsyncSession = Depends(db_helper.get_async_session),
+) -> JSONResponse:
+    uid = token_payload.sub
+    if await get_user_status(session=session,uid=int(uid)) != 'active':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    access_token = await JWTAuth.encode_access_token(uid=uid)
+    response.set_cookie(key="access_token", value=access_token)
+    return {"access_token": access_token}
+
+
+
+
 @router.post("/dev-backdoor")
 async def dev_backdoor(
         response: Response,
@@ -100,3 +117,4 @@ async def dev_backdoor(
         creds=creds,
         role='admin')
     return {'uid': uid}
+

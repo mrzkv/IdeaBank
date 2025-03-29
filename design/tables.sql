@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS "users_fio" (
 );
 
 CREATE TABLE IF NOT EXISTS "ideas" (
-	"id" serial NOT NULL UNIQUE,
+	"id" bigserial NOT NULL UNIQUE,
 	"name" varchar(255) NOT NULL,
 	"description" varchar(255) NOT NULL,
 	"status" varchar(255) NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "ideas" (
 );
 
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" serial NOT NULL UNIQUE,
+	"id" bigserial NOT NULL UNIQUE,
 	"login" varchar(255) NOT NULL UNIQUE,
 	"hashed_password" varchar(255) NOT NULL,
 	"role" varchar(255) NOT NULL,

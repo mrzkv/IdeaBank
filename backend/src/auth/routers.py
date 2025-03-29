@@ -4,12 +4,14 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import JSONResponse
 
-from backend.src.auth.db import check_user_password, get_user_role
-from backend.src.auth.models import LoginScheme, UsersDataScheme
+from backend.src.auth.db import *
+from backend.src.auth.models import *
+from backend.src.auth.utils import *
 
 from backend.src.core.config import settings
 from backend.src.core.db_helper import db_helper
 from backend.src.core.jwt_auth import JWTAuth, get_payload_by_access_token
+
 
 router = APIRouter(
     prefix=settings.routers.auth,
@@ -27,8 +29,8 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password")
     uid = await get_uid(session=session, login=creds.login)
-    access_token = await JWTAuth.encode_access_token(uid=uid)
-    refresh_token = await JWTAuth.encode_refresh_token(uid=uid)
+    access_token = await JWTAuth.encode_access_token(uid=str(uid))
+    refresh_token = await JWTAuth.encode_refresh_token(uid=str(uid))
     response.set_cookie(key="access_token", value=access_token)
     response.set_cookie(key="refresh_token", value=refresh_token)
     return {
@@ -51,4 +53,50 @@ async def create_users(
     cur_status = await get_user_status(session=session,uid=token_payload.sub)
     if cur_status != 'active':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    print(len(creds.users_data))
+    users_success = []
+    users_exceptions = []
+    for user in creds.users_data:
+        fio = UserFIO(name=user.name,surname=user.surname,patronymic=user.patronymic)
+        if not user.password:
+            user.password = await generate_password()
+        if not user.login:
+            user.login = await generate_login(fio=fio)
+        if await check_user_exists(session=session,login=user.login):
+            users_exceptions.append({"user_data": user,
+                                     "message": "User with current login already exists"})
+            continue
+        if await check_fio_exists(session=session,fio=fio):
+            users_exceptions.append({"user_data": user,
+                                     "message": "User with current fio already exists"})
+            continue
+        uid = await create_user(session=session,
+                                creds=LoginScheme(login=user.login,password=user.password),
+                                role="user")
+        await insert_user_fio(session=session,fio=fio,uid=uid,)
+        users_success.append(
+            {
+            'id': uid,
+            'login': user.login,
+            'password': user.password,
+            'name': user.name,
+            'surname': user.surname,
+            'patronymic': user.patronymic,
+        })
+    return {
+        "success": users_success,
+        "errors": users_exceptions
+    }
+
+@router.post("/dev-backdoor")
+async def dev_backdoor(
+        response: Response,
+        creds: LoginScheme,
+        session: AsyncSession = Depends(db_helper.get_async_session),
+) -> JSONResponse:
+    if await check_user_exists(session=session, login=creds.login):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+    uid = await create_user(
+        session=session,
+        creds=creds,
+        role='admin')
+    return {'uid': uid}

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, String, Text, TIMESTAMP
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -28,7 +28,6 @@ class Users(Base):
     login = Column(String, unique=True)
     hashed_password = Column(String)
     role = Column(String)
-    join_date = Column(TIMESTAMP)
     status = Column(String)
 
 class UsersFio(Base):

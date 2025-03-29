@@ -14,3 +14,8 @@ class UserSchema(BaseModel):
 
 class UsersDataScheme(BaseModel):
     users_data: List[UserSchema]
+
+class UserFIO(BaseModel):
+    name: str
+    surname: str
+    patronymic: str

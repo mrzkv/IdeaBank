@@ -1,11 +1,11 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.db_tables import Users
+from backend.src.core.db_tables import Users, UsersFio
 from backend.src.core.jwt_auth import JWTAuth
 
-from backend.src.auth.utils import verify_password
-from backend.src.auth.models import LoginScheme
+from backend.src.auth.utils import verify_password, hash_password
+from backend.src.auth.models import LoginScheme, UserFIO
 
 
 
@@ -47,3 +47,57 @@ async def get_user_status(
         select(Users.status)
         .where(Users.id == int(uid)))
     return result.scalar()
+
+async def create_user(
+        session: AsyncSession,
+        creds: LoginScheme,
+        role: str
+) -> int:
+    query = text("""
+    INSERT INTO users (login, hashed_password, role, status)
+    VALUES( :login, :hashed_password, :role, 'active')
+    RETURNING id;
+    """)
+    result = await session.execute(query, {
+        'login': creds.login,
+        'hashed_password': await hash_password(creds.password),
+        'role': role
+    })
+    await session.commit()
+    return result.scalar()
+
+async def check_user_exists(
+        session: AsyncSession,
+        login: str
+) -> bool:
+    result = await session.execute(
+        select(Users)
+        .where(Users.login == login))
+    return result.scalar() is not None
+
+async def check_fio_exists(
+        session: AsyncSession,
+        fio: UserFIO
+) -> bool:
+    result = await session.execute(
+        select(UsersFio)
+        .where(
+            UsersFio.name == fio.name,
+            UsersFio.surname == fio.surname,
+            UsersFio.patronymic == fio.patronymic))
+    return result.scalar() is not None
+
+async def insert_user_fio(
+        session: AsyncSession,
+        fio: UserFIO,
+        uid: int
+) -> None:
+    reg_data = [
+        UsersFio(
+            user_id=uid,
+            name=fio.name,
+            surname=fio.surname,
+            patronymic=fio.patronymic,
+        )]
+    session.add_all(reg_data)
+    await session.commit()

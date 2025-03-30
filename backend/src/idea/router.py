@@ -50,8 +50,10 @@ async def get_ideas(
             raise HTTPException(status_code=404, detail="Idea not found")
         return idea
     else:
-        ideas = await get_current_user_ideas(uid=int(token_payload.sub),
-                                             session=session)
+        if await get_user_role(session=session,uid=int(token_payload.sub)) == 'user':
+            ideas = await get_current_user_ideas(uid=int(token_payload.sub), session=session)
+        else:
+            ideas = await get_ideas_with_expert(expert_id=int(token_payload.sub),session=session)
         if not ideas:
             raise HTTPException(status_code=404, detail="Idea not found")
         return ideas
@@ -70,7 +72,7 @@ async def get_ideas_list(
         raise HTTPException(status_code=404, detail="No unsolved ideas found")
     return ideas
 
-@router.update("/expert/")
+@router.patch("/expert/")
 async def take_idea(
         id: int,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
@@ -119,7 +121,7 @@ async def complete_idea(
                             detail="Idea is not in work")
     await close_idea(
         session=session,
-        id=id,
+        idea_id=id,
         creds=creds,
         end_date=await get_current_ekb_time()
     )

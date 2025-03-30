@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List
 
-from pyasn1.codec.ber.eoo import endOfOctets
 from sqlalchemy import select, text, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
@@ -18,21 +17,16 @@ async def insert_new_idea(
         creator_uid: int,
         start_date: datetime
 ) -> int:
-    query = text("""
-    INSERT INTO ideas (name, description, creator_id, status, start_date)
-    VALUES( :name, :description, :creator_id, 'active', :start_date)
-    RETURNING id;
-    """)
     result = await session.execute(
-        query, {
-            'name': creds.name,
-            'description': creds.description,
-            'creator_id': creator_uid,
-            'start_date': start_date
-        }
-    )
+        insert(Ideas)
+        .values(
+            name=creds.name,
+            description=creds.description,
+            creator_id=creator_uid,
+            start_date=start_date,
+            status='active')
+        .returning(Ideas.id))
     await session.commit()
-    await session.close()
     return result.scalar()
 
 
@@ -119,3 +113,20 @@ async def close_idea(
                 solution_description=creds.solution_description,
                 status='closed'))
     await session.commit()
+
+async def get_ideas_with_expert(
+        expert_id: int,
+        session: AsyncSession
+) -> List[IdeaGetScheme]:
+    result = await session.execute(
+        select(Ideas.id)
+        .where(Ideas.expert_id == expert_id,
+               Ideas.status == 'in work'))
+    idea_ids = result.scalars().all()
+    if not idea_ids:
+        return None
+    ideas_data = []
+    for id in idea_ids:
+        idea = await get_idea(id=id,session=session)
+        if idea: ideas_data.append(idea)
+    return ideas_data

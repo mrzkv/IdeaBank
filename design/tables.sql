@@ -37,10 +37,11 @@ CREATE TABLE IF NOT EXISTS "chats" (
 );
 
 CREATE TABLE IF NOT EXISTS "chats_messages" (
-	"chat_id" bigint NOT NULL UNIQUE,
+    "id" bigserial NOT NULL UNIQUE,
+	"chat_id" bigint NOT NULL,
 	"message" text NOT NULL,
 	"author_id" bigint NOT NULL,
-	PRIMARY KEY ("chat_id")
+	PRIMARY KEY ("id")
 );
 
 ALTER TABLE "users_fio" ADD CONSTRAINT "users_fio_fk0" FOREIGN KEY ("user_id") REFERENCES "users"("id");

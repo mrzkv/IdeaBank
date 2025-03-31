@@ -7,3 +7,10 @@ class ChatGetScheme(BaseModel):
     interlocutors_ids: List[int]
     chat_status: str
     idea_status: str
+
+class MessageSendScheme(BaseModel):
+    msg: str
+
+class ChatsMessageScheme(BaseModel):
+    msg: str
+    its_your_msg: bool

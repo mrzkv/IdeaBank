@@ -46,6 +46,7 @@ class Chats(Base):
 class ChatsMessages(Base):
     __tablename__ = 'chats_messages'
 
+    id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
     chat_id = Column(BigInteger, primary_key=True)
     message = Column(Text)
     author_id = Column(BigInteger)

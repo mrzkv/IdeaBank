@@ -1,6 +1,9 @@
 from pydantic import BaseModel
+from typing import List
 
 class ChatGetScheme(BaseModel):
-    id: int
+    chat_id: int
     idea_id: int
-    status: str
+    interlocutors_ids: List[int]
+    chat_status: str
+    idea_status: str

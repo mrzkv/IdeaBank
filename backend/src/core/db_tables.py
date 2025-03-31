@@ -3,7 +3,13 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
+class UsersFio(Base):
+    __tablename__ = 'users_fio'
 
+    user_id = Column(BigInteger, primary_key=True, unique=True)
+    name = Column(String)
+    surname = Column(String)
+    patronymic = Column(String)
 
 
 class Ideas(Base):
@@ -20,7 +26,6 @@ class Ideas(Base):
     solution = Column(String)
     solution_description = Column(Text)
 
-
 class Users(Base):
     __tablename__ = 'users'
 
@@ -30,10 +35,17 @@ class Users(Base):
     role = Column(String)
     status = Column(String)
 
-class UsersFio(Base):
-    __tablename__ = 'users_fio'
 
-    user_id = Column(BigInteger, primary_key=True, unique=True)
-    name = Column(String)
-    surname = Column(String)
-    patronymic = Column(String)
+class Chats(Base):
+    __tablename__ = 'chats'
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
+    idea_id = Column(BigInteger, unique=True)
+    status = Column(String)
+
+class ChatsMessages(Base):
+    __tablename__ = 'chats_messages'
+
+    chat_id = Column(BigInteger, primary_key=True)
+    message = Column(Text)
+    author_id = Column(BigInteger)

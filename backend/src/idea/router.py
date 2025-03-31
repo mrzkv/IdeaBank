@@ -107,7 +107,7 @@ async def complete_idea(
         creds: IdeaCompleteScheme,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
-) -> JSONResponse:
+)-> JSONResponse:
     if await get_user_status(session=session,uid=int(token_payload.sub)) != 'active':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if await get_user_role(session=session,uid=int(token_payload.sub)) not in ['expert', 'admin']:
@@ -123,6 +123,5 @@ async def complete_idea(
         session=session,
         idea_id=id,
         creds=creds,
-        end_date=await get_current_ekb_time()
-    )
+        end_date=await get_current_ekb_time())
     return {'message': 'idea closed'}

@@ -15,6 +15,7 @@ class DataBaseSettings(BaseSettings):
 class RoutersPrefix(BaseSettings):
     auth: str
     idea: str
+    chat: str
 
 class Settings(BaseSettings):
     SERVER_START_TIME: int
@@ -47,6 +48,7 @@ settings = Settings(
     routers=RoutersPrefix(
         auth='/v1/api/auth',
         idea='/v1/api/idea',
+        chat='/v1/api/chat'
     ),
     jwt=AuthXConfig(
         JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=30),

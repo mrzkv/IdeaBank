@@ -3,7 +3,6 @@ from typing import List
 
 from sqlalchemy import select, text, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import JSONResponse
 
 from backend.src.core.db_tables import Ideas
 
@@ -33,7 +32,7 @@ async def insert_new_idea(
 async def get_idea(
         id: int,
         session: AsyncSession
-) -> JSONResponse:
+) -> IdeaGetScheme:
     result = await session.execute(
         select(Ideas)
         .where(Ideas.id == id))

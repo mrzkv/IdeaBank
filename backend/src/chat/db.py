@@ -107,6 +107,8 @@ async def get_messages_from_chat(
         session: AsyncSession
 ) -> List[ChatsMessageScheme]:
     chat_data = await select_chat(session=session, chat_id=chat_id)
+    if not chat_data:
+        return None
     if uid not in chat_data.interlocutors_ids:
         return None
     result = await session.execute(
@@ -131,6 +133,8 @@ async def send_message_in_chat(
         session: AsyncSession
 ) -> int:
     chat_data = await select_chat(session=session, chat_id=chat_id)
+    if not chat_data:
+        return None
     if uid not in chat_data.interlocutors_ids:
         return None
     result = await session.execute(

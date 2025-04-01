@@ -49,14 +49,26 @@ async def get_ideas(
         if not idea:
             raise HTTPException(status_code=404, detail="Idea not found")
         return idea
-    else:
-        if await get_user_role(session=session,uid=int(token_payload.sub)) == 'user':
-            ideas = await get_current_user_ideas(uid=int(token_payload.sub), session=session)
-        else:
-            ideas = await get_ideas_with_expert(expert_id=int(token_payload.sub),session=session)
-        if not ideas:
-            raise HTTPException(status_code=404, detail="Idea not found")
-        return ideas
+    ideas = None
+    if await get_user_role(session=session,uid=int(token_payload.sub)) == 'user':
+        ideas = await get_current_user_ideas(uid=int(token_payload.sub), session=session)
+    if not ideas:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return ideas
+
+@router.get("/expert/tasks", response_model=List[IdeaGetScheme])
+async def get_expert_tasks(
+        token_payload: TokenPayload = Depends(get_payload_by_access_token),
+        session: AsyncSession = Depends(db_helper.get_async_session)
+) -> JSONResponse:
+    if await get_user_status(session=session,uid=int(token_payload.sub)) != 'active':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    if await get_user_role(session=session,uid=int(token_payload.sub)) != 'expert':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    ideas = await get_ideas_with_expert(expert_id=int(token_payload.sub),session=session)
+    if not ideas:
+        raise HTTPException(status_code=404, detail="No ideas found")
+    return ideas
 
 @router.get("/expert/list", response_model=List[IdeaGetScheme])
 async def get_ideas_list(

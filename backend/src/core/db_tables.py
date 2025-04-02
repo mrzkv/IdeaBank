@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, Text, TIMESTAMP
+from sqlalchemy import Column, BigInteger, String, Text, TIMESTAMP, BOOLEAN
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -50,3 +50,12 @@ class ChatsMessages(Base):
     chat_id = Column(BigInteger, primary_key=True)
     message = Column(Text)
     author_id = Column(BigInteger)
+
+class Notifications(Base):
+    __tablename__ = 'notifications'
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True, unique=True)
+    user_id = Column(BigInteger)
+    name = Column(String)
+    date = Column(String)
+    is_read = Column(BOOLEAN)

@@ -1,4 +1,3 @@
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,12 +29,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             await db_helper.dispose()
         except Exception as e:
             logger.error(f'Error during application cleanup: {e}')
-
-
-
-
-
-
 
 main_app = FastAPI(lifespan=lifespan)
 

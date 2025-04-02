@@ -4,10 +4,10 @@ from typing import List
 from sqlalchemy import select, text, insert, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.src.core.db_tables import Ideas
+from backend.src.core.db_tables import Ideas, Notifications
 
 from backend.src.idea.models import IdeaInputScheme, IdeaGetScheme, IdeaCompleteScheme
-from backend.src.idea.utils import convert_to_readable_ekb_time
+from backend.src.idea.utils import convert_to_readable_ekb_time, get_current_ekb_time
 
 
 async def insert_new_idea(
@@ -129,3 +129,22 @@ async def get_ideas_with_expert(
         idea = await get_idea(id=id,session=session)
         if idea: ideas_data.append(idea)
     return ideas_data
+
+async def notify_users(
+        ids: int | List[int],
+        name: str,
+        session: AsyncSession
+) -> None:
+    if type(ids) == int:
+        ids = [ids]
+
+    date = await convert_to_readable_ekb_time(await get_current_ekb_time())
+
+    for id in ids:
+        await session.execute(
+            insert(Notifications)
+            .values(user_id=id,
+                    name=name,
+                    date=date,
+                    is_read=False))
+    await session.commit()

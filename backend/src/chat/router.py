@@ -10,7 +10,7 @@ from backend.src.core.config import settings
 
 from backend.src.chat.models import *
 from backend.src.chat.db import *
-
+from backend.src.idea.db import notify_users
 router = APIRouter(
     tags=['chat'],
     prefix=settings.routers.chat
@@ -59,6 +59,9 @@ async def close_idea_chat(
     if int(token_payload.sub) not in chat_data.interlocutors_ids:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     await close_chat(chat_id=chat_id, session=session)
+    await notify_users(ids=chat_data.interlocutors_ids,
+                           name=f"Чат [#{chat_data.chat_id}] закрыт",
+                           session=session)
     return {'chat_id': chat_id}
 
 @router.get('/message')

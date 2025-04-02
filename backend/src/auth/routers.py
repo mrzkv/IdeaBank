@@ -13,11 +13,11 @@ from backend.src.core.db_helper import db_helper
 from backend.src.core.jwt_auth import (JWTAuth, get_payload_by_access_token,
                                        get_payload_by_refresh_token)
 
-
 router = APIRouter(
     prefix=settings.routers.auth,
     tags=["auth"]
 )
+
 
 @router.post("/login")
 async def login(
@@ -40,53 +40,52 @@ async def login(
     }
 
 
-
-
 @router.post("/create_users")
 async def create_users(
         creds: UsersDataScheme,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
 ) -> JSONResponse:
-    role = await get_user_role(session=session,uid=token_payload.sub)
+    role = await get_user_role(session=session, uid=token_payload.sub)
     if role != 'admin':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    cur_status = await get_user_status(session=session,uid=token_payload.sub)
+    cur_status = await get_user_status(session=session, uid=token_payload.sub)
     if cur_status != 'active':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     users_success = []
     users_exceptions = []
     for user in creds.users_data:
-        fio = UserFIO(name=user.name,surname=user.surname,patronymic=user.patronymic)
+        fio = UserFIO(name=user.name, surname=user.surname, patronymic=user.patronymic)
         if not user.password:
             user.password = await generate_password()
         if not user.login:
             user.login = await generate_login(fio=fio)
-        if await check_user_exists(session=session,login=user.login):
+        if await check_user_exists(session=session, login=user.login):
             users_exceptions.append({"user_data": user,
                                      "message": "User with current login already exists"})
             continue
-        if await check_fio_exists(session=session,fio=fio):
+        if await check_fio_exists(session=session, fio=fio):
             users_exceptions.append({"user_data": user,
                                      "message": "User with current fio already exists"})
             continue
         uid = await create_user(session=session,
-                                creds=LoginScheme(login=user.login,password=user.password),
+                                creds=LoginScheme(login=user.login, password=user.password),
                                 role=creds.role)
-        await insert_user_fio(session=session,fio=fio,uid=uid,)
+        await insert_user_fio(session=session, fio=fio, uid=uid, )
         users_success.append(
             {
-            'id': uid,
-            'login': user.login,
-            'password': user.password,
-            'name': user.name,
-            'surname': user.surname,
-            'patronymic': user.patronymic,
-        })
+                'id': uid,
+                'login': user.login,
+                'password': user.password,
+                'name': user.name,
+                'surname': user.surname,
+                'patronymic': user.patronymic,
+            })
     return {
         "success": users_success,
         "errors": users_exceptions
     }
+
 
 @router.get("/refresh")
 async def refresh_access_token(
@@ -95,13 +94,11 @@ async def refresh_access_token(
         session: AsyncSession = Depends(db_helper.get_async_session),
 ) -> JSONResponse:
     uid = token_payload.sub
-    if await get_user_status(session=session,uid=int(uid)) != 'active':
+    if await get_user_status(session=session, uid=int(uid)) != 'active':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     access_token = await JWTAuth.encode_access_token(uid=uid)
     response.set_cookie(key="access_token", value=access_token)
     return {"access_token": access_token}
-
-
 
 
 @router.post("/dev-backdoor")
@@ -117,4 +114,3 @@ async def dev_backdoor(
         creds=creds,
         role='admin')
     return {'uid': uid}
-

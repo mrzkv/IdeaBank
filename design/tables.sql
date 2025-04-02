@@ -44,6 +44,15 @@ CREATE TABLE IF NOT EXISTS "chats_messages" (
 	PRIMARY KEY ("id")
 );
 
+CREATE TABLE IF NOT EXISTS "notifications" (
+  "id" bigserial NOT NULL UNIQUE,
+  "user_id" bigint NOT NULL,
+  "name" varchar(50) NOT NULL,
+  "date" varchar(50) NOT NULL,
+  "is_read" boolean NOT NULL,
+  PRIMARY KEY ("id")
+);
+
 ALTER TABLE "users_fio" ADD CONSTRAINT "users_fio_fk0" FOREIGN KEY ("user_id") REFERENCES "users"("id");
 ALTER TABLE "ideas" ADD CONSTRAINT "ideas_fk6" FOREIGN KEY ("creator_id") REFERENCES "users"("id");
 
@@ -53,3 +62,4 @@ ALTER TABLE "chats" ADD CONSTRAINT "chats_fk1" FOREIGN KEY ("idea_id") REFERENCE
 ALTER TABLE "chats_messages" ADD CONSTRAINT "chats_messages_fk0" FOREIGN KEY ("chat_id") REFERENCES "chats"("id");
 
 ALTER TABLE "chats_messages" ADD CONSTRAINT "chats_messages_fk2" FOREIGN KEY ("author_id") REFERENCES "users"("id");
+ALTER TABLE "notifications" ADD CONSTRAINT "notification_fk1" FOREIGN KEY ("user_id") REFERENCES "users"("id");

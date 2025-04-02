@@ -58,6 +58,8 @@ async def close_idea_chat(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     if int(token_payload.sub) not in chat_data.interlocutors_ids:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    if chat_data.chat_status != 'active':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     await close_chat(chat_id=chat_id, session=session)
     await notify_users(ids=chat_data.interlocutors_ids,
                            name=f"Чат [#{chat_data.chat_id}] закрыт",

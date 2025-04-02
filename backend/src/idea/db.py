@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.src.core.db_tables import Ideas, Notifications
 
-from backend.src.idea.models import IdeaInputScheme, IdeaGetScheme, IdeaCompleteScheme
+from backend.src.idea.models import IdeaInputScheme, IdeaGetScheme, IdeaCompleteScheme, NotifyScheme
 from backend.src.idea.utils import convert_to_readable_ekb_time, get_current_ekb_time
 
 
@@ -148,3 +148,25 @@ async def notify_users(
                     date=date,
                     is_read=False))
     await session.commit()
+
+async def select_notifications(
+        uid: int,
+        session: AsyncSession
+) -> List[NotifyScheme]:
+    result = await session.execute(
+        update(Notifications)
+        .values(is_read=True)
+        .where(Notifications.user_id == uid,
+               Notifications.is_read == False)
+        .returning(Notifications))
+    ideas = result.scalars().all()
+    formatted_ideas = []
+    for idea in ideas:
+        formatted_ideas.append(
+            NotifyScheme(
+                id=idea.id,
+                name=idea.name,
+                date=idea.date))
+    await session.commit()
+    return formatted_ideas
+

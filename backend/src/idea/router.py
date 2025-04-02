@@ -140,3 +140,18 @@ async def complete_idea(
                        name=f'Идея [{idea_data.id}] закрыта',
                        session=session)
     return {'message': 'idea closed'}
+
+
+@router.get("/notify")
+async def get_notifications(
+        token_payload: TokenPayload = Depends(get_payload_by_access_token),
+        session: AsyncSession = Depends(db_helper.get_async_session)
+) -> JSONResponse:
+    uid = int(token_payload.sub)
+    if await get_user_status(session=session,uid=uid) != 'active':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    notifications = await select_notifications(uid=uid, session=session)
+    if not notifications:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="No notifications found")
+    return notifications

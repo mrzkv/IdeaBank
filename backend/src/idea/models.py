@@ -19,3 +19,8 @@ class IdeaGetScheme(BaseModel):
 class IdeaCompleteScheme(BaseModel):
     solution: str
     solution_description: str
+
+class NotifyScheme(BaseModel):
+    id: int
+    name: str
+    date: str

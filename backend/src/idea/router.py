@@ -136,6 +136,7 @@ async def complete_idea(
         idea_id=id,
         creds=creds,
         end_date=await get_current_ekb_time())
-    await notify_users(ids=idea_data.interlocutors_ids,
-                       name=f'Идея [{idea_data.id}] закрыта')
+    await notify_users(ids=[idea_data.creator_id, idea_data.expert_id],
+                       name=f'Идея [{idea_data.id}] закрыта',
+                       session=session)
     return {'message': 'idea closed'}

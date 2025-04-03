@@ -28,19 +28,19 @@ async def login(
     if not await check_user_password(session=session, creds=creds):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password")
+            detail="Incorrect login or password")
     uid = await get_uid(session=session, login=creds.login)
     access_token = await JWTAuth.encode_access_token(uid=str(uid))
     refresh_token = await JWTAuth.encode_refresh_token(uid=str(uid))
-    response.set_cookie(key="access_token", value=access_token)
-    response.set_cookie(key="refresh_token", value=refresh_token)
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token
     }
 
 
-@router.post("/create_users")
+@router.post("/create-users")
 async def create_users(
         creds: UsersDataScheme,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
@@ -61,12 +61,16 @@ async def create_users(
         if not user.login:
             user.login = await generate_login(fio=fio)
         if await check_user_exists(session=session, login=user.login):
-            users_exceptions.append({"user_data": user,
-                                     "message": "User with current login already exists"})
+            users_exceptions.append({
+                "fio": f'{user.name} {user.surname} {user.patronymic}',
+                "message": "User with current login already exists"
+            })
             continue
         if await check_fio_exists(session=session, fio=fio):
-            users_exceptions.append({"user_data": user,
-                                     "message": "User with current fio already exists"})
+            users_exceptions.append({
+                "fio": f'{user.name} {user.surname} {user.patronymic}',
+                "message": "User with current fio already exists"
+            })
             continue
         uid = await create_user(session=session,
                                 creds=LoginScheme(login=user.login, password=user.password),

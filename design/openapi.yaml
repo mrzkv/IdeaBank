@@ -1,0 +1,249 @@
+openapi: 3.1.0
+info:
+  title: IdeaBank
+  description: IdeaBank
+  version: 1.0.0
+
+servers:
+  - url: 'http://127.0.0.1:8080'
+
+paths:
+   /ping:
+     get:
+       summary: Проверка активности сервера
+       description: Возвращает "pong" и 200 статус код.
+       operationId: getPing
+       responses:
+         '200':
+           description: Успешный ответ
+           content:
+             application/json:
+               schema:
+                 type: string
+                 example: pong
+
+   /v1/api/auth/login:
+     post:
+       summary: Авторизация в системе
+       description: Вход в систему по корпоративным данным
+       operationId: UserLogin
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/login'
+       responses:
+         '200':
+           description: Успешная авторизация
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/success-login'
+         '401':
+           description: Неправильный логин или пароль
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-login'
+
+   /v1/api/auth/refresh:
+     get:
+       summary: Обновление access токена
+       description: Возвращает новый access_token
+       operationId: refreshToken
+       security:
+         - RefreshToken: []
+       responses:
+         '200':
+           description: При валидном refresh_token возвращает access_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/success-refresh'
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/auth/create-users:
+     post:
+       summary: Создание новых пользователей
+       description: |
+         Регистрация в системе новых пользователей - экспертов, авторов идей.
+         Если не указывать login и password, то система сгенерирует их автоматически.
+       operationId: createUsers
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/create-users'
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Если хотя бы 1 пользователь из списка был создан
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/success-create-users'
+         '403':
+           description: У пользователя недостаточно прав для создания новых пользователей
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '400':
+           description: Некорректные данные в запросе
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-request'
+
+components:
+  schemas:
+    login:
+      type: object
+      properties:
+        login:
+          type: string
+          example: Ivanov_Ivan
+        password:
+          type: string
+          example: oIO@$JL^LK@!
+
+    user:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Ivan
+        surname:
+          type: string
+          example: Ivanov
+        patronymic:
+          type: string
+          example: Ivanovich
+        password:
+          type: string
+          example: py2jl4lk;23
+          nullable: true
+        login:
+          type: string
+          example: IvanIvanov
+          nullable: true
+
+    create-users:
+      type: object
+      properties:
+        users_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/user'
+        role:
+          type: string
+          enum: ["user", "expert"]
+
+  responses:
+    success-login:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiNjMyOWU3NmEtYzkxOS00MDA2LTkxNjUtNmVkNTY4NjUwZmNlIiwidHlwZSI6ImFjY2VzcyIsImZyZXNoIjpmYWxzZSwiY3NyZiI6IiIsImlhdCI6MTc0MzY4MjUxNCwiZXhwIjoxNzQzNjg0MzE0Ljk0NTQzM30.kV99q5PjDLMUem7FI5q-XSgnAJsWvhSvt05WNYbDGtk
+        refresh_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiZmMxOWU2MTItZmJmNC00YTdlLTk2OTgtMTJhNGJlYTAwZThmIiwidHlwZSI6InJlZnJlc2giLCJjc3JmIjoiIiwiaWF0IjoxNzQzNjgyNTMyLCJleHAiOjE3NDQ5Nzg1MzIuMDYxNTAyfQ.NJpYMiVw-jc6y30Fj-nEN60nnSbv02lKnqYFynrxbb8
+
+    bad-login:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Incorrect login or password
+
+    success-refresh:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwianRpIjoiNjMyOWU3NmEtYzkxOS00MDA2LTkxNjUtNmVkNTY4NjUwZmNlIiwidHlwZSI6ImFjY2VzcyIsImZyZXNoIjpmYWxzZSwiY3NyZiI6IiIsImlhdCI6MTc0MzY4MjUxNCwiZXhwIjoxNzQzNjg0MzE0Ljk0NTQzM30.kV99q5PjDLMUem7FI5q-XSgnAJsWvhSvt05WNYbDGtk
+
+    forbidden:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Forbidden
+
+    bad-refresh:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Invalid refresh token
+
+    bad-request:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Invalid request data
+
+    success-create-users:
+      type: object
+      properties:
+        success:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              login:
+                type: string
+                example: IvanIvanov
+              password:
+                type: string
+                example: py2jl4lk;23
+              name:
+                type: string
+                example: Ivan
+              surname:
+                type: string
+                example: Ivanov
+              patronymic:
+                type: string
+                example: Ivanovich
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              fio:
+                type: string
+                example: Ivanov Ivan Ivanovich
+              message:
+                type: string
+                example: User with current login/fio already exists
+
+  securitySchemes:
+    AccessToken:
+      type: apiKey
+      in: cookie
+      name: access_token
+
+    RefreshToken:
+      type: apiKey
+      in: cookie
+      name: refresh_token

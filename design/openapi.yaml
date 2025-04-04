@@ -8,6 +8,7 @@ servers:
   - url: 'http://127.0.0.1:8080'
 
 paths:
+
    /ping:
      get:
        summary: Проверка активности сервера
@@ -108,6 +109,11 @@ paths:
              application/json:
                schema:
                  $ref: '#/components/responses/bad-request'
+
+   # БЛОК ИДЕЙ
+
+
+   # КОМПОНЕНТЫ
 
 components:
   schemas:

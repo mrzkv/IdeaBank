@@ -767,9 +767,6 @@ components:
         solution:
           type: string
           example: Declined.
-        solution:
-          type: string
-          example: Declined.
         description:
           type: string
           example: Because your don't give me chocolate

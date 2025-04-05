@@ -33,7 +33,12 @@ async def create_new_idea(
         creds=creds,
         creator_uid=int(token_payload.sub),
         start_date=start_date)
-    return {"id": idea_id}
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content={
+            "idea_id": idea_id,
+        }
+    )
 
 
 @router.get("/", response_model=List[IdeaGetScheme] | IdeaGetScheme)
@@ -56,7 +61,7 @@ async def get_ideas(
         raise HTTPException(status_code=404, detail="Idea not found")
     return ideas
 
-@router.get("/expert/tasks", response_model=List[IdeaGetScheme])
+@router.get("/expert/tasks/in-work", response_model=List[IdeaGetScheme])
 async def get_expert_tasks(
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
@@ -70,7 +75,7 @@ async def get_expert_tasks(
         raise HTTPException(status_code=404, detail="No ideas found")
     return ideas
 
-@router.get("/expert/list", response_model=List[IdeaGetScheme])
+@router.get("/expert/tasks/unassigned", response_model=List[IdeaGetScheme])
 async def get_ideas_list(
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
@@ -81,12 +86,12 @@ async def get_ideas_list(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     ideas = await get_unsolved_ideas(session=session)
     if not ideas:
-        raise HTTPException(status_code=404, detail="No unsolved ideas found")
+        raise HTTPException(status_code=404, detail="No idea found")
     return ideas
 
-@router.patch("/expert/")
+@router.post("/expert/{task_id}/assign")
 async def take_idea(
-        id: int,
+        task_id: int,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
 ) -> JSONResponse:
@@ -94,7 +99,7 @@ async def take_idea(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if await get_user_role(session=session,uid=int(token_payload.sub)) not in ['expert', 'admin']:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    idea_data = await get_idea(id=id,session=session)
+    idea_data = await get_idea(id=task_id, session=session)
     if not idea_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Idea not found")
@@ -105,7 +110,7 @@ async def take_idea(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Idea is not active")
     await assign_expert_to_idea(
-        idea_id=id,
+        idea_id=task_id,
         session=session,
         expert_id=int(token_payload.sub))
     return {
@@ -113,9 +118,9 @@ async def take_idea(
         "assigned_to": idea_data.name
     }
 
-@router.put("/expert/")
+@router.post("/expert/{task_id}/complete")
 async def complete_idea(
-        id: int,
+        task_id: int,
         creds: IdeaCompleteScheme,
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
@@ -124,7 +129,7 @@ async def complete_idea(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     if await get_user_role(session=session,uid=int(token_payload.sub)) not in ['expert', 'admin']:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
-    idea_data = await get_idea(id=id,session=session)
+    idea_data = await get_idea(id=task_id, session=session)
     if not idea_data:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail="Idea not found")
@@ -133,7 +138,7 @@ async def complete_idea(
                             detail="Idea is not in work")
     await close_idea(
         session=session,
-        idea_id=id,
+        idea_id=task_id,
         creds=creds,
         end_date=await get_current_ekb_time())
     await notify_users(ids=[idea_data.creator_id, idea_data.expert_id],
@@ -142,8 +147,8 @@ async def complete_idea(
     return {'message': 'idea closed'}
 
 
-@router.get("/notify")
-async def get_notifications(
+@router.post("/notifications/fetch")
+async def fetch_notifications(
         token_payload: TokenPayload = Depends(get_payload_by_access_token),
         session: AsyncSession = Depends(db_helper.get_async_session)
 ) -> JSONResponse:

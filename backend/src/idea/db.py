@@ -109,7 +109,7 @@ async def close_idea(
         update(Ideas)
         .where(Ideas.id == idea_id)
         .values(solution=creds.solution,
-                solution_description=creds.solution_description,
+                description=creds.description,
                 status='closed'))
     await session.commit()
 

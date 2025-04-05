@@ -9,6 +9,8 @@ servers:
 
 paths:
 
+   # БЛОК АУНТЕФИКАЦИИ
+
    /ping:
      get:
        summary: Проверка активности сервера
@@ -25,6 +27,8 @@ paths:
 
    /v1/api/auth/login:
      post:
+       tags: 
+         - authorization
        summary: Авторизация в системе
        description: Вход в систему по корпоративным данным
        operationId: UserLogin
@@ -50,6 +54,8 @@ paths:
 
    /v1/api/auth/refresh:
      get:
+       tags:
+         - authorization
        summary: Обновление access токена
        description: Возвращает новый access_token
        operationId: refreshToken
@@ -77,6 +83,8 @@ paths:
 
    /v1/api/auth/create-users:
      post:
+       tags:
+         - authorization
        summary: Создание новых пользователей
        description: |
          Регистрация в системе новых пользователей - экспертов, авторов идей.
@@ -108,12 +116,555 @@ paths:
            content:
              application/json:
                schema:
-                 $ref: '#/components/responses/bad-request'
+                 $ref: '#/components/schemas/create-idea'
 
    # БЛОК ИДЕЙ
 
+   /v1/api/idea/create:
+     post:
+       tags:
+         - ideas
+       summary: Создание идей
+       description: Эксперт или пользователь может создать новую идею.
+       operationId: createIdea
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/create-idea'
+       security:
+         - AccessToken: []
+       responses:
+         '201':
+           description: Идей успешно создана
+           content:
+             application/json:
+               idea_id:
+                 type: integer
+                 example: 12
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
 
-   # КОМПОНЕНТЫ
+   /v1/api/idea/:
+     get:
+       tags:
+         - ideas
+       summary: Получение идей
+       description: |
+         При указании параметра id - выводит конкретную идею,
+         без указания все идеи пользователя
+       parameters:
+         - in: query
+           name: id
+           required: false
+           schema:
+             type: integer
+             description: ID запроса
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное получение идеи
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                  $ref: '#/components/schemas/idea'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/idea/expert/tasks/in-work:
+     get:
+       tags:
+         - ideas
+       summary: Идеи в работе у эксперта
+       description: |
+            Эксперт может увидеть какие идеи 
+            он взял в работу и не завершил 
+            т.е. они в статусе in-work
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное получение идеи
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                  $ref: '#/components/schemas/idea'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/idea/expert/tasks/unassigned:
+     get:
+       tags:
+         - ideas
+       summary: Не обработанные идеи
+       description: | 
+              Идеи которые еще не взял в работу
+              ни один из экспертов.
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное получение идеи
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                  $ref: '#/components/schemas/idea'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/idea/expert/{task_id}/assign:
+     post:
+       tags:
+         - ideas
+       summary: Закрепление эксперт за идеей
+       description: Эксперты просмотрев список идей могут взять 1 из них
+       parameters:
+         - name: task_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: При успешном закреплении эксперта за идеей
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/idea-assign'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/idea/expert/{task_id}/complete:
+     post:
+       tags:
+         - ideas
+       summary: Завершение работы над идеей
+       description: | 
+            Эксперты после рассмотрения идеи 
+            и общения с автором выносят свой вердикт.
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/compelete-idea'
+       parameters:
+         - name: task_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное закрытие идеи
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   message:
+                     type: string
+                     example: idea closed
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: | 
+                  Если учетная запись пользователя не активная
+                  или работа над идеей не начата.
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/idea/notifications/fetch:
+     post:
+       tags:
+         - ideas
+       summary: Получение уведомлений
+       description: Получение уведомление и пометка их как прочитанных
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Список уведомлений
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/notify-list'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: Notifications not found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   # БЛОК ЧАТОВ
+
+   /v1/api/chat/{idea_id}/create:
+     post:
+       tags:
+         - chats
+       summary: Создание чата.
+       description: Создание чата по конкретной идеи. 1 идея - 1 чат
+       parameters:
+         - name: idea_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное создание чата для идеи
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/create-chat'
+         '404':
+           description: Если идея не найдена
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: | 
+                  Если учетная запись пользователя не активная
+                  или работа над идеей не начата.
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+         '409':
+           description: Если чат уже существует
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/conflict'
+
+   /v1/api/chat/:
+     get:
+       tags:
+         - chats
+       summary: Получение чата/-ов
+       description: | 
+              При указании параметра id получается информация         
+              по конкретному чату, без указания по всем
+              чатам где состоит пользователь
+       parameters:
+         - name: id
+           in: query
+           required: false
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешное получение списка чата/-ов в которых состоит пользователь
+           content:
+             application/json:
+               schema:
+                 type: array
+                 items:
+                   $ref: '#/components/schemas/get-chat'
+
+         '404':
+           description: Если чат не найден
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '401':
+           description: При закончившемся или некорректном refresh_token
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/bad-refresh'
+
+   /v1/api/chat/{chat_id}/close:
+     post:
+       summary: Закрытие чата
+       description: Любой участник чата может его закрыть
+       parameters:
+         - name: chat_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: При успешном закрытии чата
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   chat_id:
+                     type: integer
+                     example: 12
+         '404':
+           description: Если чат не найден
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: | 
+                  Если учетная запись пользователя не 
+                  активная или пользователь не участник чата
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+
+   /v1/api/chat/{chat_id}/message/fetch:
+     get:
+       tags:
+         - chats
+       summary: Получение сообщений
+       description: Чтение сообщений из чата 
+       parameters:
+         - name: chat_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Список идей
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/get-messages'
+         '404':
+           description: Если чат не найден
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: string
+                     example: No idea found
+         '403':
+           description: | 
+                  Если учетная запись пользователя не 
+                  активная или пользователь не участник чата
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+
+   /v1/api/chat/{chat_id}/message/send:
+     post:
+       tags:
+         - chats
+       summary: Отправка сообщений
+       description: Отправка сообщений в чата
+       parameters:
+         - name: chat_id
+           in: path
+           required: true
+           schema:
+             type: integer
+       requestBody:
+         required: true
+         content:
+           application/json:
+             schema:
+               $ref: '#/components/schemas/send-message'
+       security:
+         - AccessToken: []
+       responses:
+         '200':
+           description: Успешная отправка
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   message_id:
+                     type: integer
+                     example: 20
+         '403':
+           description: Если учетная запись пользователя не активная
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/responses/forbidden'
+         '400':
+           description: Если сообщение не отправлено.
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   detail:
+                     type: integer
+                     example: Bad request
+
+  # КОМПОНЕНТЫ
 
 components:
   schemas:
@@ -159,6 +710,98 @@ components:
           type: string
           enum: ["user", "expert"]
 
+    create-idea:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Length must be from 1 to 50 symbols
+          example: Cut trees, plz
+        description:
+          type: string
+          description: Length must be from 1 to 900 symbols
+          example: I need you to cut down the trees around the office.
+
+    idea:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 11
+        name:
+          type: string
+          example: Ya.ru/ping - to long
+        description:
+          type: string
+          example: |
+            change ya.ru/ping -> ya.ru/pg
+            add response body with 'pong'
+        creator_id:
+          type: integer
+          example: 5
+        status:
+          type: string
+          example: closed
+        start_date:
+          type: string
+          example: 2025-04-04 20:00
+        end_date:
+          type: string
+          example: 2025-04-05 20:00
+          nullable: true
+        expert_id:
+          type: integer
+          example: 15
+        solution:
+          type: string
+          example: No.
+          nullable: true
+        solution_description:
+          type: string
+          example: Your idea - shit
+          nullable: true
+
+    compelete-idea:
+      type: object
+      properties:
+        solution:
+          type: string
+          example: Declined.
+        solution:
+          type: string
+          example: Declined.
+        description:
+          type: string
+          example: Because your don't give me chocolate
+
+    get-chat:
+      type: object
+      properties:
+        chat_id:
+          type: integer
+          example: 12
+        idea_id:
+          type: integer
+          example: 20
+        interlocutors_ids:
+          type: array
+          items:
+            type: integer
+          example: [1,2]
+        chat_status:
+          type: string
+          example: active
+        idea_status:
+          type: string
+          example: in-work
+
+    send-message:
+      type: object
+      properties: 
+        msg:
+          type: string
+          example: Hi!
+
   responses:
     success-login:
       type: object
@@ -190,6 +833,13 @@ components:
         detail:
           type: string
           example: Forbidden
+
+    conflict:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: Conflict
 
     bad-refresh:
       type: object
@@ -242,6 +892,46 @@ components:
               message:
                 type: string
                 example: User with current login/fio already exists
+
+    idea-assign:
+      type: object
+      properties:
+        expert_id:
+          type: integer
+          example: 12
+        assigned_to:
+          type: string
+          example: Change ya.ru/ping
+
+    notify-list:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12
+        name:
+          type: string
+          example: Idea [#8] completed
+        date:
+          type: string
+          example: 2025-04-05 20:00
+
+    create-chat:
+      type: object
+      properties:
+        chat_id:
+          type: integer
+          example: 505
+
+    get-messages:
+      type: object
+      properties:
+        msg:
+          type: string
+          example: Hello!
+        its_your_msg:
+          type: boolean
+          example: false
 
   securitySchemes:
     AccessToken:

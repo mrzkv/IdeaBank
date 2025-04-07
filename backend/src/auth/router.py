@@ -118,3 +118,19 @@ async def dev_backdoor(
         creds=creds,
         role='admin')
     return {'uid': uid}
+
+@router.get("/me")
+async def get_user_info(
+        session: AsyncSession = Depends(db_helper.get_async_session),
+        token_payload: TokenPayload = Depends(get_payload_by_access_token),
+) -> JSONResponse:
+    current_user = await get_user(uid=int(token_payload.sub), session=session)
+    user_status = False
+    if current_user.status == 'active':
+        user_status = True
+    return {
+        "id": current_user.id,
+        "login": current_user.login,
+        "role": current_user.role,
+        "is_active": user_status
+    }

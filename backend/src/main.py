@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.src.core.config import settings
 from backend.src.core.db_helper import db_helper
 
-from backend.src.auth.routers import router as auth_router
+from backend.src.auth.router import router as auth_router
 from backend.src.idea.router import router as idea_router
 from backend.src.chat.router import router as chat_router
 

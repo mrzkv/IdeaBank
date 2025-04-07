@@ -157,6 +157,5 @@ async def fetch_notifications(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     notifications = await select_notifications(uid=uid, session=session)
     if not notifications:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="No notifications found")
+        return {'detail': 'No notifications found'}
     return notifications

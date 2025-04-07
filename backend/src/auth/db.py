@@ -101,3 +101,12 @@ async def insert_user_fio(
         )]
     session.add_all(reg_data)
     await session.commit()
+
+async def get_user(
+        uid: int,
+        session: AsyncSession
+) -> Users:
+    result = await session.execute(
+        select(Users)
+        .where(Users.id == uid))
+    return result.scalar()
